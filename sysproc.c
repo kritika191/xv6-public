@@ -89,3 +89,13 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+//returning 0 if tracing successfully is enabled
+int
+sys_trace(void) {
+  int enable;
+  if (argint(0, &enable) < 0) // Fetch the argument (0 = off, 1 = on)
+    return -1;
+  myproc()->tracing_enabled = enable; // Set the tracing flag
+  return 0;
+}

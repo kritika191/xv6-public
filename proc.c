@@ -112,6 +112,7 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  p->tracing_enabled = 0; // Initialize tracing to off
   return p;
 }
 
@@ -200,6 +201,8 @@ fork(void)
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
+  // Copy tracing_enabled flag from parent to child
+  np->tracing_enabled = curproc->tracing_enabled;
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 

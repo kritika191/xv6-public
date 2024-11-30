@@ -19,6 +19,12 @@ exec(char *path, char **argv)
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
 
+  // Log the exec system call if tracing is enabled
+  if (curproc->tracing_enabled) {
+    cprintf("TRACE: pid = %d | command_name = %s | syscall = exec\n",
+            curproc->pid, curproc->name);
+  }
+  
   begin_op();
 
   if((ip = namei(path)) == 0){
@@ -93,6 +99,8 @@ exec(char *path, char **argv)
       last = s+1;
   safestrcpy(curproc->name, last, sizeof(curproc->name));
 
+  // Save the tracing_enabled flag
+  int tracing_enabled = curproc->tracing_enabled;
   // Commit to the user image.
   oldpgdir = curproc->pgdir;
   curproc->pgdir = pgdir;
@@ -103,6 +111,18 @@ exec(char *path, char **argv)
   freevm(oldpgdir);
   return 0;
 
+  // Restore the tracing_enabled flag
+  curproc->tracing_enabled = tracing_enabled;
+  cprintf("DEBUG: tracing_enabled = %d for pid = %d\n",curproc->tracing_enabled, curproc->pid);
+
+  // Log the exec system call if tracing is enabled
+  if (tracing_enabled) {
+    cprintf("TRACE:  pid = %d | command_name = %s | syscall = exec\n",
+            curproc->pid, curproc->name);
+  }
+
+  return 0;
+  
  bad:
   if(pgdir)
     freevm(pgdir);
