@@ -442,3 +442,14 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+
+int
+sys_trace(void)
+{
+  int n;
+  struct proc *curproc = myproc();
+  if(argint(0, &n) < 0)
+    return -1;
+  curproc->trace_on = n;
+  return 0;
+}
