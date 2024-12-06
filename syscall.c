@@ -6,13 +6,43 @@
 #include "proc.h"
 #include "x86.h"
 #include "syscall.h"
-
+#define N 30
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
 // Arguments on the stack, from the user call to the C
 // library system call function. The saved user %esp points
 // to a saved program counter, and then the first argument.
 
+struct event *event_list = 0;
+static int event_count = 0;
+
+void add_event(int pid, char *name, char *syscall, int ret){
+  struct event *new_event = (struct event *)kalloc();
+  if (!new_event){
+    cprintf("Unable to allocate memory for new event\n");
+    return;
+  }
+
+  new_event->pid = pid;
+  strncpy(new_event->name, name, sizeof(new_event->name) -1);
+  strncpy(new_event->syscall, syscall, sizeof(new_event->syscall) -1);
+  new_event->ret = ret;
+  new_event->next = event_list;
+
+  event_list = new_event;
+  event_count++;
+
+  //remove old events if size exceeds N
+  if (event_count > N){
+    struct event *current = event_list;
+    while(current->next->next){
+      current = current->next;
+    }
+    kfree((char*)current->next);
+    current->next=0;
+    event_count--;
+  }
+}
 // Fetch the int at addr from the current process.
 int
 fetchint(uint addr, int *ip)
@@ -104,6 +134,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_trace(void);
+extern int sys_dumptrace(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -128,11 +159,12 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
+[SYS_dumptrace] sys_dumptrace
 };
 static char *syscall_names[] = {
     "fork", "exit", "wait", "pipe", "read", "kill", "exec", "fstat", "chdir",
     "dup", "getpid", "sbrk", "sleep", "uptime", "open", "write", "mknod",
-    "unlink", "link", "mkdir", "close", "trace"
+    "unlink", "link", "mkdir", "close", "trace", "dumptrace"
 };
 char* getname(int num) {
   switch (num) {
@@ -158,6 +190,7 @@ char* getname(int num) {
     case SYS_mkdir: return "mkdir";
     case SYS_close: return "close";
     case SYS_trace: return "trace";
+    case SYS_dumptrace: return "dumptrace";
   }
   return "";
 }
@@ -175,6 +208,7 @@ syscall(void)
     curproc->tf->eax = ret;
     if(curproc->trace_on && num != SYS_trace){
       cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
+      add_event(curproc->pid, curproc->name, syscall_names[num-1], ret);
     }
   } else {
     cprintf("%d %s: unknown sys call %d\n",
@@ -182,6 +216,8 @@ syscall(void)
     curproc->tf->eax = -1;
   }
 }
+
+
 
 /*
 void

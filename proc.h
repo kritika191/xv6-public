@@ -34,6 +34,14 @@ struct context {
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+struct event {
+  int pid;
+  char name[16];
+  char syscall[16];
+  int ret;
+  struct event *next;
+};
+
 // Per-process state
 struct proc {
   uint sz;                     // Size of process memory (bytes)
@@ -50,6 +58,9 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int trace_on;
+  struct event *event_head;   // Pointer to the head of the event list
+  struct event *event_tail;   // Pointer to the tail of the event list
+  int event_count;    
 };
 
 // Process memory is laid out contiguously, low addresses first:

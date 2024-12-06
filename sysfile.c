@@ -453,3 +453,16 @@ sys_trace(void)
   curproc->trace_on = n;
   return 0;
 }
+
+int 
+sys_dumptrace(void) 
+{
+  struct proc *curproc = myproc();
+  struct event *current = curproc->event_head;
+  cprintf("Dumping latest %d system calls:\n", curproc->event_count);
+  while (current) {
+      cprintf("TRACE: pid = %d | command_name = %s | syscall = %s | return value = %d\n",current->pid, current->name, current->syscall, current->ret);
+      current = current->next;
+  }
+  return 0;
+}
