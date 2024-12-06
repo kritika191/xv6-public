@@ -174,7 +174,8 @@ syscall(void)
     ret = syscalls[num]();
     curproc->tf->eax = ret;
     if(curproc->trace_on && num != SYS_trace){
-      cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
+      cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", 
+              curproc->pid, curproc->name, syscall_names[num-1], ret);
     }
   } else {
     cprintf("%d %s: unknown sys call %d\n",
