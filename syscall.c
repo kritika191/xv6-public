@@ -6,14 +6,14 @@
 #include "proc.h"
 #include "x86.h"
 #include "syscall.h"
-#define N 30
+
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
 // Arguments on the stack, from the user call to the C
 // library system call function. The saved user %esp points
 // to a saved program counter, and then the first argument.
 
-struct event *event_list = 0;
+/*struct event *event_list = 0;
 static int event_count = 0;
 
 void add_event(int pid, char *name, char *syscall, int ret){
@@ -42,6 +42,44 @@ void add_event(int pid, char *name, char *syscall, int ret){
     current->next=0;
     event_count--;
   }
+}*/
+
+#define N 35 // Maximum number of events to store
+
+void add_event(struct proc *curproc, const char *syscall_name, int return_value) {
+    struct event *new_event = (struct event *)kalloc();
+    if (!new_event) {
+        cprintf("Error: Unable to allocate memory for new event.\n");
+        return;
+    }
+
+    new_event->pid = curproc->pid;
+    strncpy(new_event->name, curproc->name, sizeof(new_event->name) - 1);
+    new_event->name[sizeof(new_event->name) - 1] = '\0'; // Null-terminate
+    strncpy(new_event->syscall, syscall_name, sizeof(new_event->syscall) - 1);
+    new_event->syscall[sizeof(new_event->syscall) - 1] = '\0'; // Null-terminate
+    new_event->ret = return_value;
+    new_event->next = 0;
+
+    // Add to the tail of the list
+    if (curproc->event_tail) {
+        curproc->event_tail->next = new_event;
+    } else {
+        curproc->event_head = new_event; // If list is empty, set head
+    }
+    curproc->event_tail = new_event;
+    curproc->event_count++;
+
+    // Remove the oldest event if the list exceeds N
+    if (curproc->event_count > N) {
+        struct event *old_event = curproc->event_head;
+        curproc->event_head = old_event->next;
+        if (!curproc->event_head) {
+            curproc->event_tail = 0; // List is now empty
+        }
+        kfree((char *)old_event);
+        curproc->event_count--;
+    }
 }
 // Fetch the int at addr from the current process.
 int
@@ -159,7 +197,7 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
-[SYS_dumptrace] sys_dumptrace
+[SYS_dumptrace] sys_dumptrace,
 };
 static char *syscall_names[] = {
     "fork", "exit", "wait", "pipe", "read", "kill", "exec", "fstat", "chdir",
@@ -206,9 +244,9 @@ syscall(void)
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     ret = syscalls[num]();
     curproc->tf->eax = ret;
-    if(curproc->trace_on && num != SYS_trace){
+    if(curproc->trace_on && num != SYS_trace && num != SYS_dumptrace){
+      add_event(curproc, syscall_names[num], curproc->tf->eax);
       cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
-      add_event(curproc->pid, curproc->name, syscall_names[num-1], ret);
     }
   } else {
     cprintf("%d %s: unknown sys call %d\n",

@@ -58,9 +58,9 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int trace_on;
-  struct event *event_head;   // Pointer to the head of the event list
-  struct event *event_tail;   // Pointer to the tail of the event list
-  int event_count;    
+  struct event *event_head;   // Head of the event list
+  struct event *event_tail;   // Tail of the event list
+  int event_count;            // Number of events in the list
 };
 
 // Process memory is laid out contiguously, low addresses first:

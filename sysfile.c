@@ -457,12 +457,17 @@ sys_trace(void)
 int 
 sys_dumptrace(void) 
 {
-  struct proc *curproc = myproc();
-  struct event *current = curproc->event_head;
-  cprintf("Dumping latest %d system calls:\n", curproc->event_count);
-  while (current) {
-      cprintf("TRACE: pid = %d | command_name = %s | syscall = %s | return value = %d\n",current->pid, current->name, current->syscall, current->ret);
-      current = current->next;
-  }
-  return 0;
+    struct proc *curproc = myproc(); // Get the current process
+    struct event *current = curproc->event_head; // Start from the head of the list
+
+    cprintf("Dumping latest %d system calls:\n", curproc->event_count);
+
+    // Traverse the linked list and print each event
+    while (current) {
+        cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n",
+                current->pid, current->name, current->syscall, current->ret);
+        current = current->next; // Move to the next event
+    }
+
+    return 0; // Indicate success
 }
