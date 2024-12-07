@@ -1,6 +1,49 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+#include "fcntl.h"
+
+void write_strace_output(const char *filename) {
+    char *buffer;
+    int size = 4096; // Default buffer size
+    int fd;
+
+    // Dynamically allocate buffer
+    buffer = malloc(size);
+    if (!buffer) {
+        printf(2, "Error: Unable to allocate buffer for strace output\n");
+        exit();
+    }
+
+    // Call the syscall to fill the buffer with strace information
+    if (writebuffer(buffer, size) < 0) {
+        printf(2, "Error: Unable to retrieve strace output\n");
+        free(buffer);
+        exit();
+    }
+
+    // Open the file for writing
+    fd = open(filename, O_CREATE | O_WRONLY);
+    if (fd < 0) {
+        printf(2, "Error: Unable to open file %s\n", filename);
+        free(buffer);
+        exit();
+    }
+
+    // Write the buffer content to the file
+    if (write(fd, buffer, strlen(buffer)) < 0) {
+        printf(2, "Error: Unable to write to file %s\n", filename);
+        close(fd);
+        free(buffer);
+        exit();
+    }
+
+    printf(1, "Strace output successfully written to %s\n", filename);
+
+    // Clean up
+    close(fd);
+    free(buffer);
+}
 
 int main(int argc, char *argv[]) 
 {
@@ -77,6 +120,12 @@ int main(int argc, char *argv[])
         if (handleflags(3, "") < 0) {
             printf(2, "Error enabling -f flag\n");
         }
+    } else if (strcmp(argv[1], "-o") == 0) {
+        if (argc != 3) {
+            printf(2, "Usage: strace -o <filename>\n");
+            exit();
+        }
+        write_strace_output(argv[2]); // Write output to file
     }
     else {
         printf(2, "Invalid argument. Use [on|off|dump|run] <command>\n");

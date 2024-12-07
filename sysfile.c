@@ -16,6 +16,44 @@
 #include "file.h"
 #include "fcntl.h"
 
+void integer_to_string(int num, char *str) {
+    int i = 0;
+    int is_negative = 0;
+
+    // Handle 0 explicitly
+    if (num == 0) {
+        str[i++] = '0';
+        str[i] = '\0';
+        return;
+    }
+
+    // Handle negative numbers
+    if (num < 0) {
+        is_negative = 1;
+        num = -num;
+    }
+
+    // Process digits in reverse order
+    while (num > 0) {
+        str[i++] = (num % 10) + '0';
+        num /= 10;
+    }
+
+    // Add negative sign if needed
+    if (is_negative) {
+        str[i++] = '-';
+    }
+
+    str[i] = '\0';
+
+    // Reverse the string
+    for (int j = 0; j < i / 2; j++) {
+        char temp = str[j];
+        str[j] = str[i - j - 1];
+        str[i - j - 1] = temp;
+    }
+}
+
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -516,6 +554,74 @@ int sys_handleflags(void) {
 
     default:
         return -1; // Invalid flag identifier
+    }
+
+    return 0; // Success
+}
+
+int sys_writebuffer(void) {
+    char *buffer;
+    int size;
+    struct event *current;
+    struct proc *curproc = myproc();
+
+    if (argint(1, &size) < 0 || argptr(0, &buffer, size) < 0) {
+        return -1; // Error: Invalid arguments
+    }
+
+    // Ensure buffer is zeroed out
+    memset(buffer, 0, size);
+
+    // Traverse the linked list of events in reverse (LIFO order)
+    current = curproc->event_head;
+    int offset = 0;
+
+    while (current && offset < size) {
+        char pid_str[16], ret_str[16];
+        char line[128];
+        int line_offset = 0;
+
+        // Convert integers to strings
+        integer_to_string(current->pid, pid_str);
+        integer_to_string(current->ret, ret_str);
+
+        // Construct the line manually
+        safestrcpy(line, "TRACE: pid = ", sizeof(line));
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, pid_str, sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, " | process name = ", sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, current->name, sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, " | syscall = ", sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, current->syscall, sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, " | return = ", sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, ret_str, sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        safestrcpy(line + line_offset, "\n", sizeof(line) - line_offset);
+        line_offset = strlen(line);
+
+        if (offset + line_offset >= size) {
+            break; // Prevent buffer overflow
+        }
+
+        // Copy the constructed line to the buffer
+        safestrcpy(buffer + offset, line, size - offset);
+        offset += line_offset;
+
+        current = current->next;
     }
 
     return 0; // Success

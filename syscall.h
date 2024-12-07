@@ -23,5 +23,6 @@
 #define SYS_trace  22
 #define SYS_dumptrace 23
 #define SYS_handleflags 24
+#define SYS_writebuffer 25
 
 

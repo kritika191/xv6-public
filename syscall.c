@@ -174,6 +174,7 @@ extern int sys_uptime(void);
 extern int sys_trace(void);
 extern int sys_dumptrace(void);
 extern int sys_handleflags(void);
+extern int sys_writebuffer(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -200,6 +201,7 @@ static int (*syscalls[])(void) = {
 [SYS_trace]   sys_trace,
 [SYS_dumptrace] sys_dumptrace,
 [SYS_handleflags] sys_handleflags,
+[SYS_writebuffer] sys_writebuffer,
 };
 static char *syscall_names[] = {
     "fork", "exit", "wait", "pipe", "read", "kill", "exec", "fstat", "chdir",
@@ -252,12 +254,12 @@ syscall(void)
       if (curproc->flags.e && strncmp(syscall_names[num - 1], curproc->flags.syscall, sizeof(curproc->flags.syscall)) != 0) {
                 should_trace = 0; // Skip tracing if syscall doesn't match
             }
-      if (curproc->flags.s && ret < 0) {
+      if (curproc->flags.s && ret == -1) {
                 should_trace = 0; // Skip tracing if syscall doesn't match
             }
 
       // Handle -f flag: Only failed system calls
-      if (curproc->flags.f && ret >= 0) {
+      if (curproc->flags.f && ret != -1) {
                 should_trace = 0; // Skip tracing if syscall doesn't match
             }
       if (should_trace){
