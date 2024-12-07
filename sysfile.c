@@ -527,6 +527,7 @@ int sys_handleflags(void) {
         return -1;
     }
 
+
     switch (flag) {
     case 1: // -e option
         if (argstr(1, &syscall_name) < 0) {
