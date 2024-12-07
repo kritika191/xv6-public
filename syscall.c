@@ -247,38 +247,38 @@ syscall(void)
 
   num = curproc->tf->eax;
 
-  if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    // Execute the system call and save the return value
+  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     ret = syscalls[num]();
     curproc->tf->eax = ret;
 
-    // Check if tracing is enabled and exclude SYS_trace and SYS_dumptrace
-    if (curproc->trace_on && num != SYS_trace && num != SYS_dumptrace) {
-      int should_trace = 1; // Assume we trace by default
+    if(curproc->trace_on && num != SYS_trace && num != SYS_dumptrace) {
+      int should_trace = 1; //default
 
-      // Apply flag-based filtering
-      if (curproc->flags.e && strncmp(syscall_names[num], curproc->flags.syscall, sizeof(curproc->flags.syscall)) != 0) {
-        should_trace = 0; // Skip if syscall doesn't match -e filter
+      if (curproc->flags.e && strncmp(syscall_names[num - 1], 
+            curproc->flags.syscall, sizeof(curproc->flags.syscall)) != 0) {
+        should_trace = 0; // Skip tracing if syscall doesn't match
+      }
+      if (curproc->flags.s && ret == -1) {
+        should_trace = 0; // Skip tracing if syscall doesn't match
       }
 
-      if (curproc->flags.s && ret != -1) {
-        should_trace = 0; // Skip if the system call succeeded and -s flag is set
-      }
-
+      // Handle -f flag: Only failed system calls
       if (curproc->flags.f && ret != -1) {
-        should_trace = 0; // Skip if the system call succeeded and -f flag is set
+        should_trace = 0; // Skip tracing if syscall doesn't match
       }
-
-      // If we decided to trace, add the event and log the trace
-      if (should_trace) {
+      if (should_trace){
         add_event(curproc, syscall_names[num], curproc->tf->eax);
-        cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n",
-                curproc->pid, curproc->name, syscall_names[num], ret);
+        cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
       }
+      // Reset flags after processing the first command
+      curproc->flags.e = 0;
+      curproc->flags.s = 0;
+      curproc->flags.f = 0;
+      memset(curproc->flags.syscall, 0, sizeof(curproc->flags.syscall));
     }
   } else {
-    // Handle unknown system call
-    cprintf("%d %s: unknown sys call %d\n", curproc->pid, curproc->name, num);
+    cprintf("%d %s: unknown sys call %d\n",
+            curproc->pid, curproc->name, num);
     curproc->tf->eax = -1;
   }
 }
