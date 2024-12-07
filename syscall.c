@@ -261,6 +261,11 @@ syscall(void)
             }
       add_event(curproc, syscall_names[num], curproc->tf->eax);
       cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
+      // Reset flags after processing the first command
+      curproc->flags.e = 0;
+      curproc->flags.s = 0;
+      curproc->flags.f = 0;
+      memset(curproc->flags.syscall, 0, sizeof(curproc->flags.syscall));
     }
   } else {
     cprintf("%d %s: unknown sys call %d\n",
