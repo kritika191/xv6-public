@@ -183,6 +183,7 @@ UPROGS=\
 	_zombie\
 	_strace\
 	_child\
+	_application\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
