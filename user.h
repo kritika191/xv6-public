@@ -25,6 +25,7 @@ int sleep(int);
 int uptime(void);
 int trace(int);
 int dumptrace(void);
+int handleflags(int, char *);
 
 // ulib.c
 int stat(const char*, struct stat*);

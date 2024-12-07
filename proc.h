@@ -61,6 +61,12 @@ struct proc {
   struct event *event_head;   // Head of the event list
   struct event *event_tail;   // Tail of the event list
   int event_count;            // Number of events in the list
+  struct{
+    int e;
+    char syscall[20];
+    int s;
+    int f;
+  }flags;
 };
 
 // Process memory is laid out contiguously, low addresses first:

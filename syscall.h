@@ -21,5 +21,7 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_trace  22
-#define SYS_dumptrace 23 // Use the next available number
+#define SYS_dumptrace 23
+#define SYS_handleflags 24
+
 

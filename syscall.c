@@ -173,6 +173,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_trace(void);
 extern int sys_dumptrace(void);
+extern int sys_handleflags(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -198,11 +199,12 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
 [SYS_dumptrace] sys_dumptrace,
+[SYS_handleflags] sys_handleflags,
 };
 static char *syscall_names[] = {
     "fork", "exit", "wait", "pipe", "read", "kill", "exec", "fstat", "chdir",
     "dup", "getpid", "sbrk", "sleep", "uptime", "open", "write", "mknod",
-    "unlink", "link", "mkdir", "close", "trace", "dumptrace"
+    "unlink", "link", "mkdir", "close", "trace", "dumptrace", "handleflags"
 };
 char* getname(int num) {
   switch (num) {
@@ -229,6 +231,7 @@ char* getname(int num) {
     case SYS_close: return "close";
     case SYS_trace: return "trace";
     case SYS_dumptrace: return "dumptrace";
+    case SYS_handleflags: return "handleflags";
   }
   return "";
 }
@@ -245,6 +248,17 @@ syscall(void)
     ret = syscalls[num]();
     curproc->tf->eax = ret;
     if(curproc->trace_on && num != SYS_trace && num != SYS_dumptrace){
+      if (curproc->flags.e && strncmp(syscall_names[num - 1], curproc->flags.syscall, sizeof(curproc->flags.syscall)) != 0) {
+                return; // Skip if the syscall does not match the -e filter
+            }
+      if (curproc->flags.s && ret < 0) {
+                return; // Skip if the system call failed
+            }
+
+      // Handle -f flag: Only failed system calls
+      if (curproc->flags.f && ret >= 0) {
+                return; // Skip if the system call succeeded
+            }
       add_event(curproc, syscall_names[num], curproc->tf->eax);
       cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
     }

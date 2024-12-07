@@ -58,6 +58,25 @@ int main(int argc, char *argv[])
         }
     } else if(strcmp(argv[1], "dump") == 0){
         dumptrace();
+    } else if (strcmp(argv[1], "-e") == 0) {
+        // Enable tracing for a specific syscall
+        if (argc != 3) {
+            printf(2, "Usage: strace -e <syscall>\n");
+            exit();
+        }
+        if (handleflags(1, argv[2]) < 0) {
+            printf(2, "Error enabling -e flag for syscall: %s\n", argv[2]);
+        }
+    } else if (strcmp(argv[1], "-s") == 0) {
+        // Enable tracing for successful syscalls only
+        if (handleflags(2, "") < 0) {
+            printf(2, "Error enabling -s flag\n");
+        }
+    } else if (strcmp(argv[1], "-f") == 0) {
+        // Enable tracing for failed syscalls only
+        if (handleflags(3, "") < 0) {
+            printf(2, "Error enabling -f flag\n");
+        }
     }
     else {
         printf(2, "Invalid argument. Use [on|off|dump|run] <command>\n");

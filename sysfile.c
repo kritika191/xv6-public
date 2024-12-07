@@ -478,3 +478,45 @@ sys_dumptrace(void)
 
     return 0; // Indicate success
 }
+
+int sys_handleflags(void) {
+    int flag;                  // The flag identifier (e.g., e, s, f, o)
+    char *syscall_name;        // The optional syscall name for -e
+    struct proc *proc = myproc(); // Get the current process
+
+    // Retrieve the flag identifier
+    if (argint(0, &flag) < 0) {
+        return -1;
+    }
+
+    switch (flag) {
+    case 1: // -e option
+        if (argstr(1, &syscall_name) < 0) {
+            return -1; // If syscall name is not provided
+        }
+        proc->flags.e = 1; // Enable the -e flag
+        strncpy(proc->flags.syscall, syscall_name, sizeof(proc->flags.syscall) - 1);
+        proc->flags.syscall[sizeof(proc->flags.syscall) - 1] = '\0'; // Ensure null-termination
+        break;
+
+    case 2: // -s option
+        proc->flags.s = 1; // Enable the -s flag
+        break;
+
+    case 3: // -f option
+        proc->flags.f = 1; // Enable the -f flag
+        break;
+
+    case 0: // Reset all flags
+        proc->flags.e = 0;
+        proc->flags.s = 0;
+        proc->flags.f = 0;
+        memset(proc->flags.syscall, 0, sizeof(proc->flags.syscall)); // Clear syscall name
+        break;
+
+    default:
+        return -1; // Invalid flag identifier
+    }
+
+    return 0; // Success
+}
