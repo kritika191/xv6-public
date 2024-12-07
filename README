@@ -1,51 +1,85 @@
-NOTE: we have stopped maintaining the x86 version of xv6, and switched
-our efforts to the RISC-V version
-(https://github.com/mit-pdos/xv6-riscv.git)
+# Introduction
 
-xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
-Version 6 (v6).  xv6 loosely follows the structure and style of v6,
-but is implemented for a modern x86-based multiprocessor using ANSI C.
+This project extends the XV6 operating system by implementing `strace`, a debugging utility that monitors and records the system calls made by a process. The implementation aims to enhance debugging capabilities, offering insights into how processes interact with the kernel.
 
-ACKNOWLEDGMENTS
+## Features
 
-xv6 is inspired by John Lions's Commentary on UNIX 6th Edition (Peer
-to Peer Communications; ISBN: 1-57398-013-7; 1st edition (June 14,
-2000)). See also https://pdos.csail.mit.edu/6.828/, which
-provides pointers to on-line resources for v6.
+- **Trace System Calls**: Enable or disable tracing on demand for individual processes.
+- **Selective Tracing**: Use flags to focus on specific system calls or outcomes.
+- **Child Process Tracing**: Trace system calls made by child processes.
+- **Readable Output**: Enhanced output formatting for improved clarity.
+- **Output to File**: Redirect tracing output to a specified file.
 
-xv6 borrows code from the following sources:
-    JOS (asm.h, elf.h, mmu.h, bootasm.S, ide.c, console.c, and others)
-    Plan 9 (entryother.S, mp.h, mp.c, lapic.c)
-    FreeBSD (ioapic.c)
-    NetBSD (console.c)
+## Files added/modified
 
-The following people have made contributions: Russ Cox (context switching,
-locking), Cliff Frey (MP), Xiao Yu (MP), Nickolai Zeldovich, and Austin
-Clements.
+New files - 
+    strace.c - is implemented, allowing users to trace system calls of running processes.
+    child.c - is implemented, uses fork to spawn child processes.
+    application.c - is implemented, produces unexpected behavior. 
+Modified files - 
+    sysfile.c - Added sys_trace to turn strace on/off, sys_dumptrace to dump previous strace logs, sys_handleflags to handle different flags, sys_writebuffer system call to collect strace output. Modified to handle logging of system call information.
+    syscall.h, syscall.c, usys.s - Added definitions and bindings for the new system calls.
+    Makefile - updated to include user programs.
 
-We are also grateful for the bug reports and patches contributed by Silas
-Boyd-Wickizer, Anton Burtsev, Cody Cutler, Mike CAT, Tej Chajed, eyalz800,
-Nelson Elhage, Saar Ettinger, Alice Ferrazzi, Nathaniel Filardo, Peter
-Froehlich, Yakir Goaron,Shivam Handa, Bryan Henry, Jim Huang, Alexander
-Kapshuk, Anders Kaseorg, kehao95, Wolfgang Keller, Eddie Kohler, Austin
-Liew, Imbar Marinescu, Yandong Mao, Matan Shabtay, Hitoshi Mitake, Carmi
-Merimovich, Mark Morrissey, mtasm, Joel Nider, Greg Price, Ayan Shafqat,
-Eldar Sehayek, Yongming Shen, Cam Tenny, tyfkda, Rafael Ubal, Warren
-Toomey, Stephen Tu, Pablo Ventura, Xi Wang, Keiichi Watanabe, Nicolas
-Wolovick, wxdao, Grant Wu, Jindong Zhang, Icenowy Zheng, and Zou Chang Wei.
 
-The code in the files that constitute xv6 is
-Copyright 2006-2018 Frans Kaashoek, Robert Morris, and Russ Cox.
+### Building XV6 with Strace
 
-ERROR REPORTS
+1. Navigate to the XV6 directory: `cd xv6`
+2. Build XV6 with strace support: `make`
+3. Run xv6 - `make qemu-nox`
 
-We don't process error reports (see note on top of this file).
+### Using Strace
 
-BUILDING AND RUNNING XV6
+Activate strace for a process:
 
-To build xv6 on an x86 ELF machine (like Linux or FreeBSD), run
-"make". On non-x86 or non-ELF machines (like OS X, even on x86), you
-will need to install a cross-compiler gcc suite capable of producing
-x86 ELF binaries (see https://pdos.csail.mit.edu/6.828/).
-Then run "make TOOLPREFIX=i386-jos-elf-". Now install the QEMU PC
-simulator and run "make qemu".
+```bash
+strace on
+```
+
+Disable strace:
+
+```bash 
+strace off
+```
+
+Run a command with strace enabled: 
+
+```bash
+strace run [command]
+```
+
+Dump the most recent system calls:
+
+```bash
+strace dump
+```
+
+Write Trace Logs to a File (-o <filename>):
+
+```bash
+strace -o [filename.txt]
+```
+
+Filter by Specific System Call (-e <syscall>):
+
+```bash
+strace -o [syscall]
+```
+
+Trace Only Successful System Calls:
+
+```bash
+strace -s
+```
+
+Trace Only Failed System Calls:
+
+```bash
+strace -f
+```
+
+For additional options, see the command-line help:
+
+```bash
+strace --help
+```
