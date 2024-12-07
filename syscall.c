@@ -237,7 +237,6 @@ char* getname(int num) {
   }
   return "";
 }
-
 void
 syscall(void)
 {
@@ -246,30 +245,23 @@ syscall(void)
   struct proc *curproc = myproc();
 
   num = curproc->tf->eax;
-
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     ret = syscalls[num]();
     curproc->tf->eax = ret;
-
-    if(curproc->trace_on && num != SYS_trace && num != SYS_dumptrace) {
-      int should_trace = 1; //default
-
-      if (curproc->flags.e && strncmp(syscall_names[num - 1], 
-            curproc->flags.syscall, sizeof(curproc->flags.syscall)) != 0) {
-        should_trace = 0; // Skip tracing if syscall doesn't match
-      }
-      if (curproc->flags.s && ret == -1) {
-        should_trace = 0; // Skip tracing if syscall doesn't match
-      }
+    if(curproc->trace_on && num != SYS_trace && num != SYS_dumptrace){
+      if (curproc->flags.e && strncmp(syscall_names[num - 1], curproc->flags.syscall, sizeof(curproc->flags.syscall)) != 0) {
+                return; // Skip if the syscall does not match the -e filter
+            }
+      if (curproc->flags.s && ret < 0) {
+                return; // Skip if the system call failed
+            }
 
       // Handle -f flag: Only failed system calls
-      if (curproc->flags.f && ret != -1) {
-        should_trace = 0; // Skip tracing if syscall doesn't match
-      }
-      if (should_trace){
-        add_event(curproc, syscall_names[num], curproc->tf->eax);
-        cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
-      }
+      if (curproc->flags.f && ret >= 0) {
+                return; // Skip if the system call succeeded
+            }
+      add_event(curproc, syscall_names[num], curproc->tf->eax);
+      cprintf("TRACE: pid = %d | process name = %s | syscall = %s | return = %d\n", curproc->pid, curproc->name, syscall_names[num-1], ret);
       // Reset flags after processing the first command
       curproc->flags.e = 0;
       curproc->flags.s = 0;
@@ -282,22 +274,3 @@ syscall(void)
     curproc->tf->eax = -1;
   }
 }
-
-
-
-/*
-void
-syscall(void)
-{
-  int num;
-  struct proc *curproc = myproc();
-
-  num = curproc->tf->eax;
-  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    curproc->tf->eax = syscalls[num]();
-  } else {
-    cprintf("%d %s: unknown sys call %d\n",
-            curproc->pid, curproc->name, num);
-    curproc->tf->eax = -1;
-  }
-}*/
